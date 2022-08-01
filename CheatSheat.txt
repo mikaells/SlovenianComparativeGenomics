@@ -1,0 +1,76 @@
+
+#install mamba
+conda install mamba -n base -c conda-forge
+
+#install seqtk
+mamba install -c bioconda seqtk
+
+#create an environment
+mamba create -n ncbiDL
+
+#enter environment
+mamba activate ncbiDL
+
+#install ncbi-genome-download
+mamba install -c bioconda ncbi-genome-download
+
+#make folder and enter
+mdkir SlovWorkshop
+cd SlowWorkshop
+
+#ask ncbi-genome-download how to run
+ncbi-genome-download -h
+
+#download genomes
+ncbi-genome-download --genera "Phaeobacter piscinae" -F fasta --flat-output -o genomes -l complete -p 10 bacteria
+
+#gunzip
+gunzip genomes/*
+
+#make new env and enter
+mamba create -n prokka
+mamba activate prokka
+
+#install prokka
+mamba install -c bioconda perl-bioperl 
+mamba install -c conda-forge -c bioconda -c defaults prokka
+
+#annotate single genome
+prokka --compliant --centre UniLjub --outdir annotations/GCF_002407245.1_ASM240724v1_genomic --prefix GCF_002407245.1_ASM240724v1_genomic genomes/GCF_002407245.1_ASM240724v1_genomic.fna
+
+#annotate all genomes
+for i in genomes/*; do echo $i; j=$(basename $i ".fna"); echo $j; prokka --compliant --centre UniLjub --outdir annotations/$j --prefix $j -cpus 8 $i; done 
+
+#install phispy
+mamba create -n phispy
+#note wrong version is installed if the conda-forge is not set
+mamba install -c bioconda -c conda-forge phispy
+
+#make folder
+mkdir phispy
+
+#run phispy
+for i in $(find . -name "*.gbk"); do echo $i; j=$(basename $i .gbk); echo $j; phispy $i -o phispy/$j; done
+
+#install antismash
+mamba create -n antismash
+mamba activate antismash
+mamba install –c bioconda hmmer2 hmmer diamond fasttree prodigal blast muscle glimmerhmm
+mamba install –c bioconda –c conda-forge antismash=6
+download-antismash-databases
+
+#make folder
+mkdir antismash
+
+#run antismash
+for i in $(find annotations/ -name "*gbk"); do echo $i;j=$(basename $i .gbk);  echo $j; antismash $i --output-dir antismash/$j; done
+
+#install roary
+mamba create -n roary
+mamba activate roary
+mamba install -c bioconda perl-bioperl 
+monda install -c bioconda roary 
+
+#run roary
+roary -e --mafft -p 8 -f roary_out  $(find  annotations/ -name "*.gff")
+
